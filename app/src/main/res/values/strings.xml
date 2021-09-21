@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">wipay-iot-shop</string>
+    <string name="ok">ok</string>
+    <string name="cancel">cancel</string>
+
+    <string name="menu_find">Search Device</string>
+    <string name="menu_disconnect">Close Device</string>
+    <string name="search">Search Device</string>
+    <string name="start_transport">Search Device</string>
+    <string name="stop_transport">Close Device</string>
+    <string name="stop_audio">Close Resource</string>
+    <string name="send_command">CMD</string>
+    <string name="cancel_command">Cancel</string>
+
+    <string name="send">Send</string>
+    <string name="not_connected">You are not connected to a device</string>
+    <string name="title_connecting">connecting...</string>
+    <string name="title_connected_to">connected: </string>
+    <string name="title_not_connected">not connected</string>
+
+    <string name="alert_dialog_text_entry">设置国家代码</string>
+    <string name="alert_dialog_ok">确定</string>
+    <string name="alert_dialog_cancel">取消</string>
+    <string name="input_amount">amount</string>
+    <!--  DeviceListActivity -->
+    <string name="scanning">scanning for devices...</string>
+    <string name="select_device">select a device to connect</string>
+    <string name="none_paired">No devices have been paired</string>
+    <string name="none_found">No devices found</string>
+    <string name="title_paired_devices">Paired Devices</string>
+    <string name="title_other_devices">Other Available Devices</string>
+    <string name="button_scan">Scan for devices</string>
+    <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving Bluetooth Chat.</string>
+</resources>

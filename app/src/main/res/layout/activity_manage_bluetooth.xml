@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="fill_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:baselineAligned="true"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:weightSum="1">
+
+
+    <LinearLayout android:layout_width="fill_parent" android:id="@+id/linearLayout1" android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/btnAPass"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.25"
+            android:text="Find Device" />
+
+        <Button
+            android:id="@+id/btnANoPass"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.25"
+            android:text="Disconnect" />
+
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="fill_parent" android:id="@+id/linearLayout2" android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/btnNoAPass"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.25"
+            android:text="KSN" />
+
+        <Button
+            android:id="@+id/btnNoANoPass"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.25"
+            android:text="Scan Card" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:id="@+id/linearLayout21"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!--   <Button
+              android:id="@+id/btnTerCountry"
+              android:layout_width="0dp"
+              android:layout_height="wrap_content"
+              android:layout_weight="0.5"
+              android:text="设置tag" /> -->
+
+
+    </LinearLayout>
+
+
+    <EditText
+        android:id="@+id/editRecvData"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:enabled="true"
+        android:focusable="false"
+        android:gravity="top"
+        android:inputType="textMultiLine" >
+
+    </EditText>
+
+
+    <LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="179dp"
+        android:layout_marginVertical="150dp"
+        android:layout_gravity="center"
+        android:layout_height="wrap_content">
+
+
+        <Button
+            android:id="@+id/btn_SelectOK"
+            android:layout_width="192dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:layout_marginHorizontal="40dp"
+            android:text="PAY" />
+
+    </LinearLayout>
+
+
+</LinearLayout>
