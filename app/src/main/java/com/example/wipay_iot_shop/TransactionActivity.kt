@@ -1,14 +1,19 @@
 package com.example.wipay_iot_shop
 
+import android.Manifest
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -29,10 +34,20 @@ import com.imohsenb.ISO8583.enums.MESSAGE_ORIGIN
 import com.imohsenb.ISO8583.enums.VERSION
 import com.imohsenb.ISO8583.exceptions.ISOClientException
 import com.imohsenb.ISO8583.exceptions.ISOException
+import github.nisrulz.screenshott.ScreenShott
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import pub.devrel.easypermissions.AfterPermissionGranted
+import pub.devrel.easypermissions.EasyPermissions
+import java.io.File
 import java.io.IOException
+import java.lang.Exception
+import java.lang.RuntimeException
+import java.util.*
+import javax.mail.*
+import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeMessage
 import kotlin.experimental.and
 
 class TransactionActivity : AppCompatActivity() {
@@ -60,20 +75,26 @@ class TransactionActivity : AppCompatActivity() {
     var readSale: String? = null
     var readStan: Int? = null
     var stuckReverse :Boolean? = null
-    var readFlagReverse :Boolean? = null
-    var readStuckReverse :Boolean? = null
+    var readFlagReverse :Boolean? = false
+    var readStuckReverse :Boolean? = false
 
+    val username = "phanida601@gmail.com"
+    val password = "1469900351198"
 
+    private var main: View? = null
+    private var bitmap: Bitmap? = null
+    private val RC_WRITE_EXTERNAL_STORAGE = 123
+    private val RC_EXTERNAL_STORAGE = 123
 
-
-    private val HOST = "192.168.1.20"
+//    private val HOST = "192.168.1.20"
+    private val HOST = "192.168.43.24"
     var PORT = 3000
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_transaction)
 
-
+        main = findViewById(R.id.mainActivity)
         val setOrder = findViewById<TextView>(R.id.order)
         val setAmount = findViewById<TextView>(R.id.amount)
 
@@ -161,6 +182,10 @@ class TransactionActivity : AppCompatActivity() {
 //
 //        }
 
+//            if(event.type == "afterApprove"){
+//                sendEmailProcess()
+//            }
+
             manageResponse(event)
     }
 
@@ -227,7 +252,7 @@ class TransactionActivity : AppCompatActivity() {
             reverseFlag = false
             var flagReverse = FlagReverseEntity(null, reverseFlag)
 
-            if(stuckReverse == true){
+            if(stuckReverse == true){ //reverse approve
 
                 Log.i("log_tag", "Reversal Approve.")
                 stuckReverse = false
@@ -253,11 +278,12 @@ class TransactionActivity : AppCompatActivity() {
                 stan = stan?.plus(1)
                 sendTransactionProcess()
 
-            }else{
+            }else{      //transactionApprove
+
 
                 Log.i("log_tag", "Transaction Approve.")
 //                transactionApprove()
-                setDialog(null,"Transaction complete.")
+                setDialogApprove(null,"Transaction complete.")
 
                 var saleApprove = SaleEntity(null,saleMsg.toString(),stan)
 
@@ -272,6 +298,11 @@ class TransactionActivity : AppCompatActivity() {
                     Log.i("log_tag","saveSTAN : " + readStan)
 
                 }.start()
+
+//                sendEmailProcess()
+                bitmap = ScreenShott.getInstance().takeScreenShotOfView(main)
+                screenshotTask()
+
             }
 
         }else{
@@ -309,13 +340,60 @@ class TransactionActivity : AppCompatActivity() {
                     Log.i("log_tag","saveTransaction :  " + readSale)
                     Log.i("log_tag","saveSTAN : " + readStan)
 
+
                 }.start()
+
+//
 
             }
 
         }
 
+//        val policy = ThreadPolicy.Builder().permitAll().build()
+//        StrictMode.setThreadPolicy(policy)
+
         Log.i("log_tag", "reverseFlag:  " + reverseFlag)
+
+    }
+
+    fun sendEmailProcess(){
+
+        Log.i("log_tag","send email.")
+        //Send Email Slip
+        val _txtEmail = "phanida.lip@gmail.com"
+        val username = "phanida601@gmail.com"
+        val password = "1469900351198"
+        val messageToSend = "test send eamil wipay shop."
+        val props = Properties()
+        props["mail.smtp.auth"] = "true"
+        props["mail.smtp.starttls.enable"] = "true"
+        props["mail.smtp.host"] = "smtp.gmail.com"
+        props["mail.smtp.port"] = "587"
+
+        val session = Session.getInstance(props,
+            object : Authenticator() {
+                override fun getPasswordAuthentication(): PasswordAuthentication {
+                    return PasswordAuthentication(username, password)
+                }
+            })
+        try {
+            val message: Message = MimeMessage(session)
+            message.setFrom(InternetAddress(username))
+            message.setRecipients(
+                Message.RecipientType.TO,InternetAddress.parse(_txtEmail)
+            )
+            message.subject = "Sending email without opening gmail apps"
+            message.setText(messageToSend)
+            Transport.send(message)
+            Toast.makeText(
+                applicationContext,
+                "email send successfully.",
+                Toast.LENGTH_LONG
+            ).show()
+        } catch (e: MessagingException) {
+            throw RuntimeException(e)
+        }
+
 
     }
 
@@ -510,6 +588,26 @@ class TransactionActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    fun setDialogApprove(title: String?,msg: String?) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(title)
+        builder.setMessage(msg)
+        //builder.setPositiveButton("OK", DialogInterface.OnClickListener(function = x))
+        builder.setPositiveButton(getString(R.string.ok),
+            DialogInterface.OnClickListener{ dialog, which ->
+                Toast.makeText(applicationContext,android.R.string.ok, Toast.LENGTH_LONG).show()
+//                sendEmailProcess()
+                val itn =Intent(this,MenuActivity::class.java).apply{
+                    putExtra("totalAmount",totalAmount)
+                    putExtra("menuName",menuName)
+//                    putExtra("from","transAct")
+                }
+                startActivity(itn)
+            })
+        val dialog = builder.create()
+        dialog.show()
+    }
+
     fun setDialogS(title: String?,msg: String?) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle(title)
@@ -539,6 +637,57 @@ class TransactionActivity : AppCompatActivity() {
 
         val dialog = builder.create()
         dialog.show()
+    }
+
+    //receipt
+//    @AfterPermissionGranted(RC_WRITE_EXTERNAL_STORAGE)
+    open fun screenshotTask() {
+        if (hasStoragePermission()) {
+            // Have permissions, do the thing!
+            saveScreenshot()
+            Toast.makeText(this, "save receipt.", Toast.LENGTH_LONG).show()
+        } else {
+            // Ask for both permissions
+            EasyPermissions.requestPermissions(
+                this,
+                "This app needs access to can write storage.",
+                RC_WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String?>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        // Forward results to EasyPermissions
+        Log.w("log", "requestCode: $requestCode")
+        Log.w("log", "permissions: $permissions")
+        Log.w("log", "grantResults: $grantResults")
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
+    }
+
+    private fun hasStoragePermission(): Boolean {
+        return EasyPermissions.hasPermissions(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    }
+
+    private fun saveScreenshot() {
+        // Save the screenshot
+        try {
+            val file: File = ScreenShott.getInstance()
+                .saveScreenshotToPicturesFolder(this, bitmap, "receipt")
+            // Display a toast
+//            Toast.makeText(
+//                this, "Bitmap Saved at " + file.absolutePath,
+//                Toast.LENGTH_SHORT
+//            ).show()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun hexStringToByteArray(s: String): ByteArray? {

@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFCCCCCC"
+    android:visibility="visible"
     tools:context=".PaymentActivity">
 
     <TextView
@@ -26,6 +27,7 @@
         android:layout_marginTop="184dp"
         android:backgroundTint="#777777"
         android:text="PAY"
+        android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"

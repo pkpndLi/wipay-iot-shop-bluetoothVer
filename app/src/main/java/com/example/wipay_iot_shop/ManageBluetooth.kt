@@ -3,6 +3,7 @@ package com.example.wipay_iot_shop
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.DialogInterface
+import android.content.Intent
 import android.os.*
 import android.text.Editable
 import android.text.TextWatcher
@@ -33,6 +34,7 @@ import java.util.ArrayList
      private val bOpenDevice = false
      private var mMainMessageHandler: Handler? = null
      private var m_editRecvData: EditText? = null
+     var deviceName:String = ""
 
      var controller: JHLSwiperController? = null
      private val TAG = CSwiperStatusListener::class.java.simpleName + ":"
@@ -80,6 +82,7 @@ import java.util.ArrayList
                              dialog.dismiss()
                              showLogMessage("connecting:" + mDevices[which].deviceName)
                              controller?.onConnectBluetooth(30 * 1000, mDevices[which].deviceAddress)
+                             deviceName =  mDevices[which].deviceName
                          }
                          .setNegativeButton(
                              "cancel"
@@ -118,12 +121,26 @@ import java.util.ArrayList
              scanMethod = getStringExtra("scanMethod").toString()
          }
 
-
+//         totalAmount = 20
         controller = JHLSwiperController.getInstance(this)
         controller?.setCSwiperStateChangedListener(this)
 
-        controller?.scanBTDevice(5)
-        showLogMessage("Searching Bluetooth Devices...")
+
+         if(controller!!.isConnected){
+//             if(deviceName == "BJ00000011"){
+                 showLogMessage("Connect device already.")
+//             Log.w("log","BTisCon : "+ deviceName)
+
+
+//             }else{
+//                 controller?.disconnectBT()
+//             }
+         }
+         if(!controller!!.isConnected){
+//             controller?.scanBTDevice(5)
+             showLogMessage("Please connect to the device.")
+//         Log.w("log","BT_N_isCon")
+         }
 
     }
 
@@ -175,6 +192,18 @@ import java.util.ArrayList
                          showLogMessage("Please connect to the device...")
                      }
                  }
+
+                 R.id.btn_SelectOK -> {
+                     m_editRecvData!!.setText("")
+
+                     val itn = Intent(this,TransactionActivity::class.java).apply{
+                         putExtra("totalAmount",totalAmount)
+                         putExtra("menuName",menuName)
+                         putExtra("cardNO",cardNO)
+                         putExtra("cardEXD",cardEXD)
+                     }
+                     startActivity(itn)
+                 }
                  else -> {
                  }
              }
@@ -184,49 +213,49 @@ import java.util.ArrayList
      fun createWriteNumberOfMoney() {
          // TODO Auto-generated method stub
          //对话输入框
-         val factory = LayoutInflater.from(this@ManageBluetooth)
-         val view: View = factory.inflate(R.layout.activity_amount, null)
-         edit1 = view.findViewById<View>(R.id.amount) as EditText
-         edit1!!.addTextChangedListener(textWatcher) //监控金额输入，小数点后2位
-         AlertDialog.Builder(this@ManageBluetooth)
-             .setTitle("Please enter the transaction amount")
-             .setView(view)
-             .setPositiveButton(
-                 "OK"
-             ) { dialog, which ->
-                 var midAmount = ""
-                 val aa = edit1!!.text.toString()
-                 val len = edit1!!.text.toString().length
-                 if (edit1!!.text.toString().length == 0) {
-                     inputAmount = 0
-                     Log.w("logtag","createWriteNumberOfMoney() :  inputAmount = 0")
-                 } else {
-                     val price = edit1!!.text.toString().toLong()
-                     val data1 = BigDecimal(price)
-                     val data2 = BigDecimal(21474836.47)
-                     data1.compareTo(data2)
-                     val ff = data1.compareTo(data2)
-                     if (data1.compareTo(data2) <= 0) {
-                         midAmount = String.format("%.2f", price.toFloat())
-//                         midAmount = "%.2f".format(price.toFloat())
-                         val num1 = BigDecimal(midAmount)
-                         val result = num1.multiply(BigDecimal(100))
-                         inputAmount = result.toLong()
-                         Log.w("logtag","createWriteNumberOfMoney() :  inputAmount = result")
-                     } else {
-                         inputAmount = 2147483647
-                     }
-                 }
+//         val factory = LayoutInflater.from(this@ManageBluetooth)
+//         val view: View = factory.inflate(R.layout.activity_amount, null)
+//         edit1 = view.findViewById<View>(R.id.amount) as EditText
+//         edit1!!.addTextChangedListener(textWatcher) //监控金额输入，小数点后2位
+//         AlertDialog.Builder(this@ManageBluetooth)
+//             .setTitle("Please enter the transaction amount")
+//             .setView(view)
+//             .setPositiveButton(
+//                 "OK"
+//             ) { dialog, which ->
+//                 var midAmount = ""
+//                 val aa = edit1!!.text.toString()
+//                 val len = edit1!!.text.toString().length
+//                 if (edit1!!.text.toString().length == 0) {
+//                     inputAmount = 0
+//                     Log.w("logtag","createWriteNumberOfMoney() :  inputAmount = 0")
+//                 } else {
+//                     val price = edit1!!.text.toString().toLong()
+//                     val data1 = BigDecimal(price)
+//                     val data2 = BigDecimal(21474836.47)
+//                     data1.compareTo(data2)
+//                     val ff = data1.compareTo(data2)
+//                     if (data1.compareTo(data2) <= 0) {
+//                         midAmount = String.format("%.2f", price.toFloat())
+////                         midAmount = "%.2f".format(price.toFloat())
+//                         val num1 = BigDecimal(midAmount)
+//                         val result = num1.multiply(BigDecimal(100))
+//                         inputAmount = result.toLong()
+//                         Log.w("logtag","createWriteNumberOfMoney() :  inputAmount = result")
+//                     } else {
+//                         inputAmount = 2147483647
+//                     }
+//                 }
                  val translog = "000001"
                  val orderid = "2016070700000001"
-                 controller!!.setAmount(inputAmount, "福店消费", "156", Template.FLAG_PAY_QUERY)
+                 controller!!.setAmount(totalAmount!!.toLong(), "福店消费", "156", Template.FLAG_PAY_QUERY)
                  controller!!.onStartCSwiper(
                      3,
                      translog.toByteArray(),
                      orderid.toByteArray(),
                      30 * 1000
                  )
-             }.setNegativeButton("Cancel", null).create().show()
+//             }.setNegativeButton("Cancel", null).create().show()
      }
 
      var textWatcher: TextWatcher = object : TextWatcher {
@@ -357,7 +386,13 @@ import java.util.ArrayList
      override fun onWaitingForCardSwipe() {
 //         TODO("Not yet implemented")
          Log.d(TAG + "", "onWaitingForCardSwipe")
-         showLogMessage("Please insert or swipe card")
+
+         if(scanMethod == "swipe"){
+             showLogMessage("Please swipe card")
+         }else{
+             showLogMessage("Please insert card")
+         }
+
      }
 
      override fun onDetectTrack() {
@@ -433,6 +468,8 @@ import java.util.ArrayList
          Log.d(TAG + "", "handBrushWay:$handBrushWay")
          //showLogMessage("磁道总参数:"+encTracks+"\r\n"+"一磁道长度："+track1Length+"\r\n"+"cardHolderName:"+cardHolderName+"\r\n"+"二磁道长度:"+track2Length
          //		+"\r\n"+"三磁道长度："+track3Length);
+         cardNO = maskedPAN
+         cardEXD = expiryDate
          showLogMessage("Decryption succeeded:$maskedPAN")
      }
 
@@ -460,15 +497,15 @@ import java.util.ArrayList
 //         TODO("Not yet implemented")
      }
 
-     override fun onDestroy() {
-         controller!!.release()
-         try {
-             Thread.sleep(1000)
-         } catch (e: InterruptedException) {
-             // TODO Auto-generated catch block
-             e.printStackTrace()
-         }
-         super.onDestroy()
-     }
+//     override fun onDestroy() {
+//         controller!!.release()
+//         try {
+//             Thread.sleep(1000)
+//         } catch (e: InterruptedException) {
+//             // TODO Auto-generated catch block
+//             e.printStackTrace()
+//         }
+//         super.onDestroy()
+//     }
 
  }
