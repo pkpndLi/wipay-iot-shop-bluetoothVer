@@ -50,7 +50,7 @@ class SettlementActivity : AppCompatActivity() {
 
     // Get SharedPreferences
     private val MY_PREFS = "my_prefs"
-    val sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
+    private lateinit var sp: SharedPreferences
 
     var saleCountTxt: TextView? = null
     var saleAmountTxt: TextView? = null
@@ -99,11 +99,12 @@ class SettlementActivity : AppCompatActivity() {
          saleAmountTxt = findViewById<TextView>(R.id.sumAmountTxt)
 
 
+         sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
+
 
         setDialogQueryTransaction("","Wait a moment, the system is processing...")
 
         confirmBtn.setOnClickListener{
-
             //set settlementFlag = 1
             val editor: SharedPreferences.Editor = sp.edit()
             editor.putBoolean("settlementFlag", true)
@@ -112,7 +113,12 @@ class SettlementActivity : AppCompatActivity() {
             STAN = readStan?.plus(1)
             batchTotals = buildBatchTotals(saleCount!!, saleAmount!!.toDouble())
 
-            sendPacket(settlementPacket())
+            //test settlementPacket
+            Log.e(log,"settlementFlag: " + settlementFlag)
+            Log.e(log,"stan: "+ STAN + "\n" + "batchTotals: " +batchTotals)
+            Log.e(log,"Settlement Packet: " + settlementPacket())
+
+//            sendPacket(settlementPacket())
 
         }
 
@@ -259,10 +265,10 @@ class SettlementActivity : AppCompatActivity() {
 
             Log.i(log, "Settlement Approve.")
 
-            val editor: SharedPreferences.Editor = sp.edit()
-            editor.putBoolean("settlementFlag", false)
-            editor.putBoolean("firstTransactionFlag", true)
-            editor.commit()
+//            val editor: SharedPreferences.Editor = sp.edit()
+//            editor.putBoolean("settlementFlag", false)
+//            editor.putBoolean("firstTransactionFlag", true)
+//            editor.commit()
 
             setDialog(null,"Transaction complete.")
 
