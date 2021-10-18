@@ -13,7 +13,7 @@ class SaleEntity(
         var _id: Int?,
 
         @ColumnInfo(name = "iso_msg")
-        val isoMsg: String,
+        val isoMsg: String?,
 
         @ColumnInfo(name = "STAN")
         val STAN: Int?

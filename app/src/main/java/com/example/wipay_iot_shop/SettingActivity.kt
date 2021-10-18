@@ -15,6 +15,7 @@ class SettingActivity : AppCompatActivity() {
         Items.add(Model("Merchant Location","-",R.drawable.location64))
         Items.add(Model("Merchant ID","222222222222222",R.drawable.shop64))
         Items.add(Model("Terminal ID","22222222",R.drawable.terminal64))
+        Items.add(Model("Sale Report","",R.drawable.summary))
 
         val adapter = SettingAdapter(this,R.layout.merchantlist,Items)
         merchantList.adapter = adapter

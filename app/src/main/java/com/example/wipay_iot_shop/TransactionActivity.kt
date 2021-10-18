@@ -66,6 +66,7 @@ class TransactionActivity : AppCompatActivity() {
     var output1: TextView? = null
     var output2: TextView? = null
     var stan: Int? = null
+    var initialStan: Int? = 1174
     var reverseFlag :Boolean? = null
     var reversal: String? = null
     var responseCode: String? = null
@@ -78,15 +79,21 @@ class TransactionActivity : AppCompatActivity() {
     var readFlagReverse :Boolean? = false
     var readStuckReverse :Boolean? = false
 
-    val username = "phanida601@gmail.com"
-    val password = "1469900351198"
+    //get initial value from MenuActivity
+    var settlementFlag:Boolean? = null
+    var firstTransactionFlag:Boolean? = null
+    var startId:Int = 0
+
+//    val username = "phanida601@gmail.com"
+//    val password = "1469900351198"
 
     private var main: View? = null
     private var bitmap: Bitmap? = null
     private val RC_WRITE_EXTERNAL_STORAGE = 123
-    private val RC_EXTERNAL_STORAGE = 123
 
-//    private val HOST = "192.168.1.20"
+
+//    private val HOST = "192.168.43.195"
+//    var PORT = 5000
     private val HOST = "192.168.43.24"
     var PORT = 3000
 
@@ -153,12 +160,12 @@ class TransactionActivity : AppCompatActivity() {
     }
 
     fun accessDatabase(){
-
         appDatabase = AppDatabase.getAppDatabase(this)
         reversalDAO = appDatabase?.reversalDao()
         saleDAO = appDatabase?.saleDao()
         flagReverseDAO = appDatabase?.flagReverseDao()
         stuckReverseDAO = appDatabase?.stuckReverseDao()
+
     }
 
         @Subscribe(threadMode = ThreadMode.MAIN)
@@ -193,7 +200,7 @@ class TransactionActivity : AppCompatActivity() {
 
         stan = readStan
         if(readStan == null){
-            stan = 1117
+            stan = initialStan
         }
 
         reverseFlag = readFlagReverse
@@ -261,7 +268,8 @@ class TransactionActivity : AppCompatActivity() {
 //                setDialog("Cenceling Success.","Successfully canceled the transaction.")
 
                 var reStan = codeUnpack(reReversal.toString(),11)
-                var reversalApprove = SaleEntity(null,reReversal.toString(), reStan!!.toInt())
+//                var reversalApprove = SaleEntity(null,reReversal.toString(), reStan!!.toInt())
+                var reversalApprove = SaleEntity(null,null, reStan!!.toInt())
 
                 Thread{
 
@@ -299,7 +307,7 @@ class TransactionActivity : AppCompatActivity() {
 
                 }.start()
 
-//                sendEmailProcess()
+//               screenshortProcess()
                 bitmap = ScreenShott.getInstance().takeScreenShotOfView(main)
                 screenshotTask()
 
@@ -327,7 +335,7 @@ class TransactionActivity : AppCompatActivity() {
                 }
 
                 Log.i("log_tag", "Error code: " + responseCode)
-                var saleApprove = SaleEntity(null,null.toString(),stan)
+                var saleApprove = SaleEntity(null,null,stan)
 
                 Thread{
 
@@ -343,8 +351,6 @@ class TransactionActivity : AppCompatActivity() {
 
                 }.start()
 
-//
-
             }
 
         }
@@ -356,46 +362,46 @@ class TransactionActivity : AppCompatActivity() {
 
     }
 
-    fun sendEmailProcess(){
-
-        Log.i("log_tag","send email.")
-        //Send Email Slip
-        val _txtEmail = "phanida.lip@gmail.com"
-        val username = "phanida601@gmail.com"
-        val password = "1469900351198"
-        val messageToSend = "test send eamil wipay shop."
-        val props = Properties()
-        props["mail.smtp.auth"] = "true"
-        props["mail.smtp.starttls.enable"] = "true"
-        props["mail.smtp.host"] = "smtp.gmail.com"
-        props["mail.smtp.port"] = "587"
-
-        val session = Session.getInstance(props,
-            object : Authenticator() {
-                override fun getPasswordAuthentication(): PasswordAuthentication {
-                    return PasswordAuthentication(username, password)
-                }
-            })
-        try {
-            val message: Message = MimeMessage(session)
-            message.setFrom(InternetAddress(username))
-            message.setRecipients(
-                Message.RecipientType.TO,InternetAddress.parse(_txtEmail)
-            )
-            message.subject = "Sending email without opening gmail apps"
-            message.setText(messageToSend)
-            Transport.send(message)
-            Toast.makeText(
-                applicationContext,
-                "email send successfully.",
-                Toast.LENGTH_LONG
-            ).show()
-        } catch (e: MessagingException) {
-            throw RuntimeException(e)
-        }
-
-
-    }
+//    fun sendEmailProcess(){
+//
+//        Log.i("log_tag","send email.")
+//        //Send Email Slip
+//        val _txtEmail = "phanida.lip@gmail.com"
+//        val username = "phanida601@gmail.com"
+//        val password = "1469900351198"
+//        val messageToSend = "test send eamil wipay shop."
+//        val props = Properties()
+//        props["mail.smtp.auth"] = "true"
+//        props["mail.smtp.starttls.enable"] = "true"
+//        props["mail.smtp.host"] = "smtp.gmail.com"
+//        props["mail.smtp.port"] = "587"
+//
+//        val session = Session.getInstance(props,
+//            object : Authenticator() {
+//                override fun getPasswordAuthentication(): PasswordAuthentication {
+//                    return PasswordAuthentication(username, password)
+//                }
+//            })
+//        try {
+//            val message: Message = MimeMessage(session)
+//            message.setFrom(InternetAddress(username))
+//            message.setRecipients(
+//                Message.RecipientType.TO,InternetAddress.parse(_txtEmail)
+//            )
+//            message.subject = "Sending email without opening gmail apps"
+//            message.setText(messageToSend)
+//            Transport.send(message)
+//            Toast.makeText(
+//                applicationContext,
+//                "email send successfully.",
+//                Toast.LENGTH_LONG
+//            ).show()
+//        } catch (e: MessagingException) {
+//            throw RuntimeException(e)
+//        }
+//
+//
+//    }
 
     fun sendTransactionProcess(){
 

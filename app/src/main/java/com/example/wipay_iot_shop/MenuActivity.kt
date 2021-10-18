@@ -2,6 +2,7 @@ package com.example.wipay_iot_shop
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
@@ -10,6 +11,7 @@ import android.graphics.drawable.Drawable
 import android.os.StrictMode
 import android.util.Log
 import android.widget.Toast
+import org.jetbrains.annotations.NotNull
 import java.lang.RuntimeException
 import java.util.*
 import javax.mail.*
@@ -24,10 +26,27 @@ class MenuActivity : AppCompatActivity() {
     var cardEXD:String = ""
     var menuName:String = ""
     var from:String = ""
+//    var settlementFlag:Boolean? = null
+//    var firstTransactionFlag:Boolean? = null
+//    var startId:Int = 1
+
+    private val MY_PREFS = "my_prefs"
+    var stringValue = ""
+    var booleanValue : Boolean? = null
+    var log = "log2"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_menu)
+
+        val sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
+
+        val editor: SharedPreferences.Editor = sp.edit()
+//        editor.putString("stringKey", "This is a book!")
+        editor.putBoolean("settlementFlag", true)
+        editor.putBoolean("firstTransactionFlag", true)
+        editor.putInt("startId", 1)
+        editor.commit()
 
         val listImg = findViewById<ImageView>(R.id.list)
         val goodsImg1 = findViewById<ImageView>(R.id.goods1)
@@ -39,6 +58,9 @@ class MenuActivity : AppCompatActivity() {
         goodsImg2.setImageDrawable(getImage(this, "coffee1"))
         goodsImg3.setImageDrawable(getImage(this, "brownie"))
 
+
+
+
         intent.apply {
 //          processing = getBooleanExtra("processing",false)
             totalAmount = getIntExtra("totalAmount",145)
@@ -46,11 +68,7 @@ class MenuActivity : AppCompatActivity() {
 //            from = getStringExtra("from").toString()
         }
 
-//        if(from == "transAct"){
-//            sendEmailProcess()
-//        }
-//        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
-//        StrictMode.setThreadPolicy(policy)
+
 
         goodsImg1.setOnClickListener{
 
@@ -78,9 +96,19 @@ class MenuActivity : AppCompatActivity() {
             }
             startActivity(itn)
         }
+
         listImg.setOnClickListener {
-            startActivity(Intent(this,SettingActivity::class.java))
+            startActivity(Intent(this,SettlementActivity::class.java))
         }
+
+
+//test sharedPreferences
+//        stringValue = sp.getString("stringKey","not found!").toString()
+//        booleanValue = sp.getBoolean("booleanKey",false)
+//
+//        Log.i(log, "String value: " + stringValue)
+//        Log.i(log, "Boolean value: " + booleanValue)
+
 
 
     }
@@ -91,44 +119,5 @@ class MenuActivity : AppCompatActivity() {
         )
     }
 
-    fun sendEmailProcess(){
 
-        Log.i("log_tag","send email.")
-        //Send Email Slip
-        val _txtEmail = "phanida.lip@gmail.com"
-        val username = "phanida601@gmail.com"
-        val password = "1469900351198"
-        val messageToSend = "test send eamil wipay shop."
-        val props = Properties()
-        props["mail.smtp.auth"] = "true"
-        props["mail.smtp.starttls.enable"] = "true"
-        props["mail.smtp.host"] = "smtp.gmail.com"
-        props["mail.smtp.port"] = "587"
-
-        val session = Session.getInstance(props,
-            object : Authenticator() {
-                override fun getPasswordAuthentication(): PasswordAuthentication {
-                    return PasswordAuthentication(username, password)
-                }
-            })
-        try {
-            val message: Message = MimeMessage(session)
-            message.setFrom(InternetAddress(username))
-            message.setRecipients(
-                Message.RecipientType.TO, InternetAddress.parse(_txtEmail)
-            )
-            message.subject = "Sending email without opening gmail apps"
-            message.setText(messageToSend)
-            Transport.send(message)
-            Toast.makeText(
-                applicationContext,
-                "email send successfully.",
-                Toast.LENGTH_LONG
-            ).show()
-        } catch (e: MessagingException) {
-            throw RuntimeException(e)
-        }
-
-
-    }
 }
