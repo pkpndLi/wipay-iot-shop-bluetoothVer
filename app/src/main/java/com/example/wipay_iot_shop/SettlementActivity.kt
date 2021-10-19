@@ -60,13 +60,12 @@ class SettlementActivity : AppCompatActivity() {
     var log = "log"
 
     var readStan: Int? = null
-    var STAN: Int? = null
+    var stan: Int? = null
     var readId: Int? = null
     var isoMsgArray = ArrayList<String>()
     var isoMsg: String? = null
     var readIsoMsg: String? = null
-    var startId: Int = 1
-    var endId: Int = 3
+
     var saleCount: Int? = 0
     var saleAmount: Int? = 0
     var batchTotals: String? = null
@@ -86,12 +85,15 @@ class SettlementActivity : AppCompatActivity() {
     //get initial value from MenuActivity
     var settlementFlag:Boolean? = null
     var firstTransactionFlag:Boolean? = null
-//    var startId:Int? = null
+    var oldStartId:Int? = null
+    var startId:Int? = null
+    var endId: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settlement)
 
+        Log.d(log,"on settlementActivity.")
         saleReport = findViewById(R.id.SaleReportActivity)
 
         var confirmBtn = findViewById<Button>(R.id.confirmBtn)
@@ -100,9 +102,18 @@ class SettlementActivity : AppCompatActivity() {
 
 
          sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
+         startId = sp.getInt("startId",1)
+         oldStartId = sp.getInt("oldStartId",0)
+         Log.w(log,"oldStartId: " + oldStartId)
+         Log.w(log,"startId: " + startId)
 
 
-        setDialogQueryTransaction("","Wait a moment, the system is processing...")
+        if(oldStartId == startId){
+            setDialog("Processing failed.","There has never been any transaction.")
+
+        }else{
+            setDialogQueryTransaction("","Wait a moment, the system is processing...")
+        }
 
         confirmBtn.setOnClickListener{
             //set settlementFlag = 1
@@ -110,15 +121,15 @@ class SettlementActivity : AppCompatActivity() {
             editor.putBoolean("settlementFlag", true)
             editor.commit()
 
-            STAN = readStan?.plus(1)
+            stan = readStan?.plus(1)
             batchTotals = buildBatchTotals(saleCount!!, saleAmount!!.toDouble())
-
             //test settlementPacket
-            Log.e(log,"settlementFlag: " + settlementFlag)
-            Log.e(log,"stan: "+ STAN + "\n" + "batchTotals: " +batchTotals)
+            settlementFlag =  sp.getBoolean("settlementFlag",false)
+            Log.w(log,"settlementFlag: " + settlementFlag)
+            Log.e(log,"stan: "+ stan + "\n" + "batchTotals: " + batchTotals)
             Log.e(log,"Settlement Packet: " + settlementPacket())
 
-//            sendPacket(settlementPacket())
+            sendPacket(settlementPacket())
 
         }
 
@@ -259,23 +270,41 @@ class SettlementActivity : AppCompatActivity() {
 
         Log.i("log_tag", "Response Message:" + event.message)
         responseCode = codeUnpack(event.message,39)
-        Log.i("log_tag", "response code:"+ responseCode)
+        Log.e("log_tag", "response code:"+ responseCode)
 
         if(responseCode == "3030"){
 
             Log.i(log, "Settlement Approve.")
 
-//            val editor: SharedPreferences.Editor = sp.edit()
-//            editor.putBoolean("settlementFlag", false)
-//            editor.putBoolean("firstTransactionFlag", true)
-//            editor.commit()
+            val editor: SharedPreferences.Editor = sp.edit()
+            editor.putBoolean("settlementFlag", false)
+            editor.putBoolean("firstTransactionFlag", true)
+            editor.putInt("oldStartId", startId!!)
+            editor.commit()
 
             setDialog(null,"Transaction complete.")
+
+            settlementFlag =  sp.getBoolean("settlementFlag",false)
+            firstTransactionFlag = sp.getBoolean("firstTransactionFlag",false)
+            Log.w(log,"settlementFlag: " + settlementFlag)
+            Log.w(log,"firstTransactionFlag: " + firstTransactionFlag)
+
+            var settlementApprove  = SaleEntity(null,null,stan)
+
+            Thread{
+
+                accessDatabase()
+                saleDAO?.insertSale(settlementApprove)
+                readStan = saleDAO?.getSale()?.STAN
+//                Log.i("log_tag","saveTransaction :  " + )
+                Log.w(log,"saveSTAN : " + readStan)
+
+            }.start()
 
             //save  sale report in photo album
             bitmap = ScreenShott.getInstance().takeScreenShotOfView(saleReport)
             screenshotTask()
-
+            Log.i(log,"save sale report already.")
 
         }else{
 
@@ -284,7 +313,7 @@ class SettlementActivity : AppCompatActivity() {
             }
 
             errorCode(responseCode,"Please check your problem.")
-
+            Log.e(log,"Settlement Error!!!.")
         }
 
     }
@@ -302,13 +331,13 @@ class SettlementActivity : AppCompatActivity() {
             .setLeftPadding(0x00.toByte())
             .mti(MESSAGE_FUNCTION.Request, MESSAGE_ORIGIN.Acquirer)
             .processCode("920000")
-            .setField(FIELDS.F11_STAN, STAN.toString())
+            .setField(FIELDS.F11_STAN, stan.toString())
             .setField(FIELDS.F24_NII_FunctionCode, "120")
             .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray("3232323232323232"))
             .setField(FIELDS.F42_CA_ID,hexStringToByteArray("323232323232323232323232323232"))
             .setField(FIELDS.F60_Reserved_National,"0006303030313432")
             .setField(FIELDS.F62_Reserved_Private,hexStringToByteArray("303030343841"))
-            .setField(FIELDS.F63_Reserved_Private,batchTotals)
+            .setField(FIELDS.F63_Reserved_Private,hexStringToByteArray(batchTotals.toString()))
             .setHeader("6001208000")
             .build()
     }
@@ -328,10 +357,11 @@ class SettlementActivity : AppCompatActivity() {
                     readId = saleDAO?.getSale()?._id
                     endId = readId!!
 
-                    Log.e(log, "Read STAN: " + readStan)
-                    Log.e(log, "Read ID: " + readId)
+                    Log.w(log, "endId: " + readId)
+                    Log.w(log, "Read STAN: " + readStan)
 
-                    for(i in startId..endId){
+
+                    for(i in startId?.rangeTo(endId!!)!!){
                         readIsoMsg = saleDAO?.getSaleWithID(i)?.isoMsg
 //                    isoMsgArray.add(readIsoMsg!!)
                         if(readIsoMsg != null){
@@ -476,7 +506,7 @@ class SettlementActivity : AppCompatActivity() {
     }
 
     fun buildBatchTotals(Salecount :Int,Saleamount :Double):String{
-        var DE63 :String = "0090"
+        var DE63 =""
         var salecount = Salecount.toString().padStart(3,'0')
         var saleamount = String.format("%.2f",Saleamount)
         var arr : Array<String>

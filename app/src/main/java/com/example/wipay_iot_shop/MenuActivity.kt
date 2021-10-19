@@ -21,6 +21,8 @@ import javax.mail.internet.MimeMessage
 
 class MenuActivity : AppCompatActivity() {
 
+    private lateinit var sp: SharedPreferences
+
     var totalAmount:Int? = null
     var cardNO:String = ""
     var cardEXD:String = ""
@@ -39,14 +41,14 @@ class MenuActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_menu)
 
-        val sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
+        sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
 
-        val editor: SharedPreferences.Editor = sp.edit()
-//        editor.putString("stringKey", "This is a book!")
-        editor.putBoolean("settlementFlag", true)
-        editor.putBoolean("firstTransactionFlag", true)
-        editor.putInt("startId", 1)
-        editor.commit()
+//        val editor: SharedPreferences.Editor = sp.edit()
+////        editor.putString("stringKey", "This is a book!"
+//        editor.putBoolean("settlementFlag", false)
+//        editor.putBoolean("firstTransactionFlag", true)
+//        editor.putInt("startId", 1)
+//        editor.commit()
 
         val listImg = findViewById<ImageView>(R.id.list)
         val goodsImg1 = findViewById<ImageView>(R.id.goods1)

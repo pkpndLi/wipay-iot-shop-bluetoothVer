@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import androidx.appcompat.app.AppCompatActivity
@@ -57,6 +58,9 @@ class TransactionActivity : AppCompatActivity() {
     var flagReverseDAO : FlagReverseDao? = null
     var stuckReverseDAO : StuckReverseDao? = null
 
+    private val MY_PREFS = "my_prefs"
+    private lateinit var sp: SharedPreferences
+
     var processing = false
     var totalAmount:Int? = null
     var cardNO:String = ""
@@ -101,10 +105,14 @@ class TransactionActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_transaction)
 
+        sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
+
         main = findViewById(R.id.mainActivity)
         val setOrder = findViewById<TextView>(R.id.order)
         val setAmount = findViewById<TextView>(R.id.amount)
 
+        settlementFlag =  sp.getBoolean("settlementFlag",false)
+        firstTransactionFlag = sp.getBoolean("firstTransactionFlag",true)
 
             intent.apply {
 //          processing = getBooleanExtra("processing",false)
@@ -118,8 +126,9 @@ class TransactionActivity : AppCompatActivity() {
         setOrder.setText(menuName)
         setAmount.setText(totalAmount.toString())
 
-        Log.i("log_tag","onCreate!!!")
-
+        Log.d("log_tag","on transactionActivity.")
+        Log.w("log_tag","settlementFlag: " + settlementFlag)
+        Log.w("log_tag","firstTransactionFlag: " + firstTransactionFlag)
 
     }
 
@@ -132,8 +141,17 @@ class TransactionActivity : AppCompatActivity() {
 //            ""
 //        ))
 
-        setDialogS("","Comfirm your order.")
-        processing = true
+//      Check settlementFlag
+        if(settlementFlag == true){
+
+            setDialog("Transaction Error!!.","The sales report has not yet been completed.\n" +
+                    "Must return to complete the sales report first.")
+        }else{
+
+            setDialogS("","Comfirm your order.")
+            processing = true
+        }
+
 
         val handler = Handler(Looper.getMainLooper())
         handler.postDelayed({
@@ -292,7 +310,6 @@ class TransactionActivity : AppCompatActivity() {
                 Log.i("log_tag", "Transaction Approve.")
 //                transactionApprove()
                 setDialogApprove(null,"Transaction complete.")
-
                 var saleApprove = SaleEntity(null,saleMsg.toString(),stan)
 
                 Thread{
@@ -302,10 +319,25 @@ class TransactionActivity : AppCompatActivity() {
                     saleDAO?.insertSale(saleApprove)
                     readSale = saleDAO?.getSale()?.isoMsg
                     readStan = saleDAO?.getSale()?.STAN
-                    Log.i("log_tag","saveTransaction :  " + readSale)
-                    Log.i("log_tag","saveSTAN : " + readStan)
+                    startId = saleDAO?.getSale()?._id!!
+
+                    if(firstTransactionFlag == true){
+
+                        val editor: SharedPreferences.Editor = sp.edit()
+                        editor.putInt("startId", startId)
+                        editor.putBoolean("firstTransactionFlag", false)
+                        editor.commit()
+
+                        Log.i("log_tag","startId :  " + startId)
+                    }
+
+                    Log.w("log_tag","saveId :  " + startId)
+                    Log.w("log_tag","firstTransactionFlag: " + firstTransactionFlag)
+                    Log.w("log_tag","saveTransaction :  " + readSale)
+                    Log.w("log_tag","saveSTAN : " + readStan)
 
                 }.start()
+
 
 //               screenshortProcess()
                 bitmap = ScreenShott.getInstance().takeScreenShotOfView(main)
@@ -579,6 +611,18 @@ class TransactionActivity : AppCompatActivity() {
         return mti
     }
 
+    fun setDialogNormal(title: String?,msg: String?) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(title)
+        builder.setMessage(msg)
+        //builder.setPositiveButton("OK", DialogInterface.OnClickListener(function = x))
+        builder.setPositiveButton(getString(R.string.ok),
+            DialogInterface.OnClickListener{ dialog, which ->
+                Toast.makeText(applicationContext,android.R.string.ok, Toast.LENGTH_LONG).show()
+            })
+        val dialog = builder.create()
+        dialog.show()
+    }
 
     fun setDialog(title: String?,msg: String?) {
         val builder = AlertDialog.Builder(this)
