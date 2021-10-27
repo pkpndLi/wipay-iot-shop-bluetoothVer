@@ -22,10 +22,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.example.testpos.database.transaction.*
 import com.example.testpos.evenbus.data.MessageEvent
-import com.example.wipay_iot_shop.transaction.FlagReverseDao
-import com.example.wipay_iot_shop.transaction.FlagReverseEntity
-import com.example.wipay_iot_shop.transaction.StuckReverseDao
-import com.example.wipay_iot_shop.transaction.StuckReverseEntity
+import com.example.wipay_iot_shop.transaction.*
 import com.imohsenb.ISO8583.builders.ISOClientBuilder
 import com.imohsenb.ISO8583.builders.ISOMessageBuilder
 import com.imohsenb.ISO8583.entities.ISOMessage
@@ -57,6 +54,7 @@ class TransactionActivity : AppCompatActivity() {
     var saleDAO : SaleDao? = null
     var flagReverseDAO : FlagReverseDao? = null
     var stuckReverseDAO : StuckReverseDao? = null
+    var responseDAO : ResponseDao? = null
 
     private val MY_PREFS = "my_prefs"
     private lateinit var sp: SharedPreferences
@@ -82,6 +80,7 @@ class TransactionActivity : AppCompatActivity() {
     var stuckReverse :Boolean? = null
     var readFlagReverse :Boolean? = false
     var readStuckReverse :Boolean? = false
+    var readResponseMsg:String? = null
 
     //get initial value from MenuActivity
     var settlementFlag:Boolean? = null
@@ -183,6 +182,7 @@ class TransactionActivity : AppCompatActivity() {
         saleDAO = appDatabase?.saleDao()
         flagReverseDAO = appDatabase?.flagReverseDao()
         stuckReverseDAO = appDatabase?.stuckReverseDao()
+        responseDAO = appDatabase?.responseDao()
 
     }
 
@@ -271,13 +271,15 @@ class TransactionActivity : AppCompatActivity() {
         Log.i("log_tag", "Response Message:" + event.message)
         responseCode = codeUnpack(event.message,39)
         output2?.setText("response code: " + responseCode)
+        var responseMsg = event.message
         Log.i("log_tag", "response code:"+ responseCode)
-
+        //
         if(responseCode == "3030"){
+            //ไม่ว่าจะเข้าเงื่อนไข if หรือ else ข้างล่างก็เป็นการปลด reverse เหมือนกัน
             reverseFlag = false
             var flagReverse = FlagReverseEntity(null, reverseFlag)
 
-            if(stuckReverse == true){ //reverse approve
+            if(stuckReverse == true){ //manage reverse approve
 
                 Log.i("log_tag", "Reversal Approve.")
                 stuckReverse = false
@@ -287,7 +289,9 @@ class TransactionActivity : AppCompatActivity() {
 
                 var reStan = codeUnpack(reReversal.toString(),11)
 //                var reversalApprove = SaleEntity(null,reReversal.toString(), reStan!!.toInt())
+                //รายการที่ทำ reverse สำเร็จต้อง save stan เอาไว้ เพื่อให้ stan ต่อเนื่อง
                 var reversalApprove = SaleEntity(null,null, reStan!!.toInt())
+                var responseReversal = ResponseEntity(null,null)
 
                 Thread{
 
@@ -295,28 +299,97 @@ class TransactionActivity : AppCompatActivity() {
                     flagReverseDAO?.insertFlagReverse(flagReverse)
                     stuckReverseDAO?.insertStuckReverse(reverseStuck)
                     saleDAO?.insertSale(reversalApprove)
+                    responseDAO?.insertResponseMsg(responseReversal)
                     readSale = saleDAO?.getSale()?.isoMsg
+                    readResponseMsg = responseDAO?.getResponseMsg()?.responseMsg
                     readStan = saleDAO?.getSale()?.STAN
                     Log.i("log_tag","saveReverse-sale :  " + readSale)
                     Log.i("log_tag","saveSTAN : " + readStan)
+                    Log.w("log_tag","saveResponse : " + readResponseMsg)
 
                 }.start()
                 stan = stan?.plus(1)
                 sendTransactionProcess()
 
-            }else{      //transactionApprove
+            }else{      //manage transactionApprove
 
 
                 Log.i("log_tag", "Transaction Approve.")
 //                transactionApprove()
                 setDialogApprove(null,"Transaction complete.")
                 var saleApprove = SaleEntity(null,saleMsg.toString(),stan)
+                var responseSaleApprove = ResponseEntity(null,responseMsg)
+
 
                 Thread{
 
                     accessDatabase()
                     flagReverseDAO?.insertFlagReverse(flagReverse)
                     saleDAO?.insertSale(saleApprove)
+                    responseDAO?.insertResponseMsg(responseSaleApprove)
+                    readSale = saleDAO?.getSale()?.isoMsg
+                    readResponseMsg = responseDAO?.getResponseMsg()?.responseMsg
+                    readStan = saleDAO?.getSale()?.STAN
+                    startId = saleDAO?.getSale()?._id!!
+
+                    if(firstTransactionFlag == true){
+
+                        val editor: SharedPreferences.Editor = sp.edit()
+                        editor.putInt("startId", startId)
+                        editor.putBoolean("firstTransactionFlag", false)
+                        editor.commit()
+
+                        Log.i("log_tag","startId :  " + startId)
+                    }
+
+                    Log.w("log_tag","saveId :  " + startId)
+                    Log.w("log_tag","firstTransactionFlag: " + sp.getBoolean("firstTransactionFlag",false))
+                    Log.w("log_tag","saveTransaction :  " + readSale)
+                    Log.w("log_tag","saveSTAN : " + readStan)
+                    Log.w("log_tag","saveResponse : " + readResponseMsg)
+
+                }.start()
+
+
+//               screenshortProcess()
+                bitmap = ScreenShott.getInstance().takeScreenShotOfView(main)
+                screenshotTask()
+
+            }
+
+        }else{
+
+            if(stuckReverse == true){ //ยังติด reverse อยู่
+
+                errorCode(responseCode,null)
+
+            } else{ //manage Transaction Error
+
+                reverseFlag = false  //กรณีมี response แต่ transaction error
+                var flagReverse = FlagReverseEntity(null, reverseFlag)
+
+                if(responseCode == "3934"){
+
+                    errorCode(responseCode,"Seqence error / Duplicate transmission")
+
+                }else{
+
+                    errorCode(responseCode,null)
+
+                }
+
+                Log.i("log_tag", "Error code: " + responseCode)
+                var transactionError = SaleEntity(null,saleMsg.toString(),stan)
+                var responseSaleError = ResponseEntity(null,responseMsg)
+
+                Thread{
+
+                    accessDatabase()
+
+                    flagReverseDAO?.insertFlagReverse(flagReverse)
+                    saleDAO?.insertSale(transactionError)
+                    responseDAO?.insertResponseMsg(responseSaleError)
+                    readResponseMsg = responseDAO?.getResponseMsg()?.responseMsg
                     readSale = saleDAO?.getSale()?.isoMsg
                     readStan = saleDAO?.getSale()?.STAN
                     startId = saleDAO?.getSale()?._id!!
@@ -332,53 +405,10 @@ class TransactionActivity : AppCompatActivity() {
                     }
 
                     Log.w("log_tag","saveId :  " + startId)
-                    Log.w("log_tag","firstTransactionFlag: " + firstTransactionFlag)
+                    Log.w("log_tag","firstTransactionFlag: " + sp.getBoolean("firstTransactionFlag",false))
                     Log.w("log_tag","saveTransaction :  " + readSale)
                     Log.w("log_tag","saveSTAN : " + readStan)
-
-                }.start()
-
-
-//               screenshortProcess()
-                bitmap = ScreenShott.getInstance().takeScreenShotOfView(main)
-                screenshotTask()
-
-            }
-
-        }else{
-
-            if(stuckReverse == true){
-
-                errorCode(responseCode,null)
-
-            } else{
-
-                reverseFlag = false
-                var flagReverse = FlagReverseEntity(null, reverseFlag)
-
-                if(responseCode == "3934"){
-
-                    errorCode(responseCode,"Seqence error / Duplicate transmission")
-
-                }else{
-
-                    errorCode(responseCode,null)
-
-                }
-
-                Log.i("log_tag", "Error code: " + responseCode)
-                var saleApprove = SaleEntity(null,null,stan)
-
-                Thread{
-
-                    accessDatabase()
-
-                    flagReverseDAO?.insertFlagReverse(flagReverse)
-                    saleDAO?.insertSale(saleApprove)
-                    readSale = saleDAO?.getSale()?.isoMsg
-                    readStan = saleDAO?.getSale()?.STAN
-                    Log.i("log_tag","saveTransaction :  " + readSale)
-                    Log.i("log_tag","saveSTAN : " + readStan)
+                    Log.w("log_tag","saveResponse : " + readResponseMsg)
 
 
                 }.start()
@@ -538,9 +568,12 @@ class TransactionActivity : AppCompatActivity() {
             .setLeftPadding(0x00.toByte())
             .mti(MESSAGE_FUNCTION.Request, MESSAGE_ORIGIN.Acquirer)
             .processCode("000000")
+//            .setField(FIELDS.F2_PAN, cardNO)
             .setField(FIELDS.F2_PAN, cardNO)
+//            .setField(FIELDS.F4_AmountTransaction, totalAmount.toString())
             .setField(FIELDS.F4_AmountTransaction, totalAmount.toString())
             .setField(FIELDS.F11_STAN, STAN)
+//            .setField(FIELDS.F14_ExpirationDate, cardEXD)
             .setField(FIELDS.F14_ExpirationDate, cardEXD)
             .setField(FIELDS.F22_EntryMode, "0010")
             .setField(FIELDS.F24_NII_FunctionCode, "120")
@@ -603,13 +636,14 @@ class TransactionActivity : AppCompatActivity() {
         return responseCode
     }
 
-    fun mtiUnpack(response: String): String? {
+    fun mtiUnpack(isoMsg: String): String? {
         val isoMessageUnpacket: ISOMessage = ISOMessageBuilder.Unpacker()
-            .setMessage(response)
+            .setMessage(isoMsg)
             .build()
         val mti: String? = isoMessageUnpacket.getMti()
         return mti
     }
+
 
     fun setDialogNormal(title: String?,msg: String?) {
         val builder = AlertDialog.Builder(this)
