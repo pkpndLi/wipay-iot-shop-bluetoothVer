@@ -4,13 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.wipay_iot_shop.transaction.FlagReverseDao
-import com.example.wipay_iot_shop.transaction.FlagReverseEntity
-import com.example.wipay_iot_shop.transaction.StuckReverseDao
-import com.example.wipay_iot_shop.transaction.StuckReverseEntity
+import com.example.wipay_iot_shop.transaction.*
 
 @Database(entities = arrayOf(SaleEntity::class,ReversalEntity::class, FlagReverseEntity::class,
-    StuckReverseEntity::class),version = 1)
+    StuckReverseEntity::class, ResponseEntity::class),version = 1)
 
 abstract class AppDatabase : RoomDatabase()
 {
@@ -18,6 +15,7 @@ abstract class AppDatabase : RoomDatabase()
     abstract  fun saleDao():SaleDao
     abstract  fun flagReverseDao():FlagReverseDao
     abstract  fun stuckReverseDao(): StuckReverseDao
+    abstract  fun responseDao(): ResponseDao
 
     companion object{
         @Volatile private var instance : AppDatabase? = null
