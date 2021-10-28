@@ -2,6 +2,7 @@ package com.example.wipay_iot_shop
 
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -36,6 +37,10 @@ class BatchUploadActivity : AppCompatActivity() {
     var saleDAO : SaleDao? = null
     var responseDAO : ResponseDao? = null
 
+    // Get SharedPreferences
+    private val MY_PREFS = "my_prefs"
+    private lateinit var sp: SharedPreferences
+
     var log = "log"
 
     var startId:Int? = null
@@ -43,6 +48,7 @@ class BatchUploadActivity : AppCompatActivity() {
     var readIsoMsg: String? = null
     var readResponseMsg:String? = null
     var responseMsg:String? = null
+    var readId: Int? = null
 
     var readStan: Int? = null
     var batchUploadList = ArrayList<String>()
@@ -55,16 +61,16 @@ class BatchUploadActivity : AppCompatActivity() {
     var date:String = ""
     var responseCode: String = ""
     var saleStan:String = ""
-    var batchStan:Int = 0
+    var batchStan:Int? = 0
     var pccCode: String = "000001"
     var lastPccCode: String = "000000"
     var TID: String = "3232323232323232"
     var MID: String = "323232323232323232323232323232"
 
+    var lastSettlementFlag: Boolean? = null
+
     var responseCount: Int? = 0
     var batchCount: Int? = 0
-
-    var trigger: Boolean? = null
 
     //    private val HOST = "192.168.43.195"
 //    var PORT = 5000
@@ -76,8 +82,16 @@ class BatchUploadActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_batch_upload)
 
-        setDialogQueryTransaction("","Wait a moment, the system is processing...")
+        intent.apply {
+            startId = getIntExtra("startId",1)
+            endId = getIntExtra(" endId",2)
+//
+        }
 
+        sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
+//        startId = sp.getInt("startId",1)
+
+        setDialogQueryTransaction("","Wait a moment, the system is processing...")
 
     }
 
@@ -171,14 +185,17 @@ class BatchUploadActivity : AppCompatActivity() {
                 Log.e(log,"BatchUpload Finish.Back to implement LastSettlement.")
                 Log.e(log,"nowStan: " + batchStan)
 
+                val itn =Intent(this,SettlementActivity::class.java).apply{
+                    putExtra("lastSettlementFlag",true)
+                    putExtra("batchStan",batchStan)
+                }
+                startActivity(itn)
             }
 
         }else{
                 errorCode(responseCode,"Please check your problem.")
                 Log.e(log,"BatchUpload Error!!!.")
         }
-
-
     }
 
     fun sendBatchUploadPacket(){
@@ -239,54 +256,6 @@ class BatchUploadActivity : AppCompatActivity() {
 
     fun buildBatchUploadPacket(){
 
-        accessDatabase()
-        readStan = saleDAO?.getSale()?.STAN
-        batchStan = readStan!!
-        endId = 3
-        var setPccCode = pccCode
-        var batchUploadPacket: String = ""
-
-        Log.w(log, "Read STAN: " + readStan)
-
-        //  for(i in startId?.rangeTo(endId!!)!!){
-        for(n in 1..endId!!){
-            readResponseMsg = responseDAO?.getResponseMsgWithID(n)?.responseMsg
-            readIsoMsg = saleDAO?.getSaleWithID(n)?.isoMsg
-
-            Log.w(log,"isoResponseMsg[${n}]: "+ readResponseMsg)
-            Log.w(log,"isoMsg[${n}]: "+ readIsoMsg)
-            if(readResponseMsg != null){
-
-                responseCount = responseCount?.plus(1)
-
-                batchStan = batchStan?.plus(1)           //set stan
-                isoUnpackResponse(readResponseMsg.toString())   //set bit 4,12,13,39,11
-                isoUnpackSale(readIsoMsg.toString())            //set bit 2,14
-
-                if(n == endId){
-                    setPccCode = lastPccCode                    //set bit 3
-                }
-
-                batchUploadPacket = batchUpload(setPccCode).toString()
-                batchUploadList.add(batchUploadPacket)
-
-                Log.i(log, "batchStan: " + batchStan)
-                Log.i(log, "processingCode: " + setPccCode)
-                Log.e(log, "batchUpload packet[${n}]: " + batchUploadPacket)
-
-
-            }
-
-        }
-        Log.w(log, "Response Count: " + responseCount)
-        Log.w(log,"batchLen: " + batchUploadList.size)
-        trigger = true
-        EventBus.getDefault().post(MessageEvent(
-            "sendPacketTrigger","true"))
-
-        runOnUiThread {
-
-        }
 
     }
 
@@ -299,7 +268,61 @@ class BatchUploadActivity : AppCompatActivity() {
                 Toast.makeText(applicationContext,android.R.string.ok, Toast.LENGTH_SHORT).show()
 
                 Thread{
-                    buildBatchUploadPacket()
+//                    buildBatchUploadPacket()
+                    accessDatabase()
+                    readStan = saleDAO?.getSale()?.STAN
+                    readId = saleDAO?.getSale()?._id
+
+//        endId = readId
+                    batchStan = readStan
+
+                    if(readStan == null){
+                        batchStan = 1
+                    }
+
+//                    endId = 3
+                    var setPccCode = pccCode
+                    var batchUploadPacket: String = ""
+
+                    Log.w(log, "Read STAN: " + readStan)
+
+                      for(n in startId?.rangeTo(endId!!)!!){
+//                    for(n in startId..endId!!){
+                        readResponseMsg = responseDAO?.getResponseMsgWithID(n)?.responseMsg
+                        readIsoMsg = saleDAO?.getSaleWithID(n)?.isoMsg
+
+                        Log.w(log,"isoResponseMsg[${n}]: "+ readResponseMsg)
+                        Log.w(log,"isoMsg[${n}]: "+ readIsoMsg)
+                        if(readResponseMsg != null){
+
+                            responseCount = responseCount?.plus(1)
+                            batchStan = batchStan?.plus(1)           //set stan
+                            isoUnpackResponse(readResponseMsg.toString())   //set bit 4,12,13,39,11
+                            isoUnpackSale(readIsoMsg.toString())            //set bit 2,14
+
+                            if(n == endId){
+                                setPccCode = lastPccCode                    //set bit 3
+                            }
+
+                            batchUploadPacket = batchUpload(setPccCode).toString()
+                            batchUploadList.add(batchUploadPacket)
+
+                            Log.i(log, "batchStan: " + batchStan)
+                            Log.i(log, "processingCode: " + setPccCode)
+                            Log.e(log, "batchUpload packet[${n}]: " + batchUploadPacket)
+                        }
+
+                    }
+                    Log.w(log, "Response Count: " + responseCount)
+                    Log.w(log,"batchLen: " + batchUploadList.size)
+
+                    EventBus.getDefault().post(MessageEvent(
+                        "sendPacketTrigger","true"))
+
+                    runOnUiThread {
+
+                    }
+
                 }.start()
             })
 

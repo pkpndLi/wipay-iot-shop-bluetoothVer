@@ -86,6 +86,8 @@ class SettlementActivity : AppCompatActivity() {
     var cardEXD:String = ""
     var MTI:String = ""
     var oldStan:String = ""
+    var TID: String = "3232323232323232"
+    var MID: String = "323232323232323232323232323232"
 
     var responseCode: String? = null
 
@@ -101,13 +103,13 @@ class SettlementActivity : AppCompatActivity() {
     private val HOST = "192.168.43.24"
     var PORT = 3000
 
-
-    //get initial value from MenuActivity
     var settlementFlag:Boolean? = null
     var firstTransactionFlag:Boolean? = null
     var oldStartId:Int? = null
     var startId:Int? = null
     var endId: Int? = null
+    var lastSettlementFlag: Boolean? = null
+    var batchStan: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -122,6 +124,14 @@ class SettlementActivity : AppCompatActivity() {
 
         var batchBtn = findViewById<Button>(R.id.batchBtn)
 
+        intent.apply {
+            lastSettlementFlag = getBooleanExtra("lastSettlementFlag",false)
+            batchStan = getIntExtra("batchStan",1)
+//
+        }
+
+        Log.i(log,"lastSettlementFlag: " + lastSettlementFlag)
+
          sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
          startId = sp.getInt("startId",1)
          oldStartId = sp.getInt("oldStartId",0)
@@ -129,37 +139,57 @@ class SettlementActivity : AppCompatActivity() {
          Log.w(log,"startId: " + startId)
 
 
-//        if(oldStartId == startId){
-//            setDialog("Processing failed.","There has never been any transaction.")
-//
-//        }else{
+        if(oldStartId == startId){
+            setDialog("Processing failed.","There has never been any transaction.")//
+        }else if(lastSettlementFlag == true){
+
+              Log.i(log,"In LastSettlement path")
+
+              stan = batchStan?.plus(1)
+              batchTotals = sp.getString("batchTotals","11111111111")
+              Log.e(log,"stan: "+ stan + "," + "batchTotals: " + batchTotals)
+              Log.e(log,"send lastSettlement Packet: " + lastSettlementPacket())
+              setDialogNormal("","please confirm transaction again.")
+
+          }else{
             setDialogQueryTransaction("","Wait a moment, the system is processing...")
-//        }
+          }
 
         confirmBtn.setOnClickListener{
             //set settlementFlag = 1
-            val editor: SharedPreferences.Editor = sp.edit()
-            editor.putBoolean("settlementFlag", true)
-            editor.commit()
 
-            stan = readStan?.plus(1)
-            batchTotals = buildBatchTotals(saleCount!!, saleAmount!!.toDouble())
-            //test settlementPacket
-            settlementFlag =  sp.getBoolean("settlementFlag",false)
-            Log.w(log,"settlementFlag: " + settlementFlag)
-            Log.e(log,"stan: "+ stan + "\n" + "batchTotals: " + batchTotals)
-            Log.e(log,"Settlement Packet: " + settlementPacket())
+            if(lastSettlementFlag == true){
 
-            sendPacket(settlementPacket())
+                sendPacket(lastSettlementPacket())
 
+                val editor: SharedPreferences.Editor = sp.edit()
+                editor.putBoolean("lastSettlementFlag", false)
+                editor.commit()
+
+            }else{
+
+                stan = readStan?.plus(1)
+                batchTotals = buildBatchTotals(saleCount!!, saleAmount!!.toDouble())
+
+                val editor: SharedPreferences.Editor = sp.edit()
+                editor.putBoolean("settlementFlag", true)
+                editor.putString("batchTotals",batchTotals)
+                editor.commit()
+
+                //test settlementPacket
+                settlementFlag =  sp.getBoolean("settlementFlag",false)
+                Log.w(log,"settlementFlag: " + settlementFlag)
+                Log.e(log,"stan: "+ stan + "\n" + "batchTotals: " + batchTotals)
+                Log.e(log,"Settlement Packet: " + settlementPacket())
+
+                sendPacket(settlementPacket())
+            }
         }
 
         batchBtn.setOnClickListener {
 
-            manageBatchUpload()
+
         }
-
-
     }
 
     override fun onStart() {
@@ -185,11 +215,12 @@ class SettlementActivity : AppCompatActivity() {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public fun onMessageEvent(event: MessageEvent){
 
-        if (event.type == SEND_MESSAGE) {
-
+        if (event.type == "iso_response") {
+            manageResponse(event)
         }
-        manageResponse(event)
+
     }
+
 
 
     fun sendPacket(packet: ISOMessage?){
@@ -243,51 +274,47 @@ class SettlementActivity : AppCompatActivity() {
 
         if(responseCode == "3030"){
 
-            if(batchUploadLoopFlag == true){
-                batchResponseFlag = 1
-                Log.e(log,"batchUpload response: " + event.message)
-
-            }
-//            if(mtiUnpack(event.message) == "0120"){
-//
-//                batchUpload()
-//            }
-            else{
-
                 manageSettlementApprove()
-            }
 
         }else{
 
-            if(batchUploadLoopFlag == true){
-                batchResponseFlag = -1
-                errorCode(responseCode,"Please check your problem.")
-                Log.e(log,"Settlement Error!!!.")
-                batchUploadLoopFlag = false
-            }
+            var settlementError  = SaleEntity(null,null,stan)
+            var responseSettlementError = ResponseEntity(null,null)
 
-            if(responseCode == "3935"){
+            Thread{
 
-//                batchUpload()
+                accessDatabase()
+                saleDAO?.insertSale(settlementError)
+                responseDAO?.insertResponseMsg(responseSettlementError)
+                readStan = saleDAO?.getSale()?.STAN
+                readResponseMsg = responseDAO?.getResponseMsg()?.responseMsg
+//                Log.i("log_tag","saveTransaction :  " + )
+                Log.w(log,"saveSTAN : " + readStan)
+                Log.w(log,"saveResponse : " + readResponseMsg)
 
-//                newIsoMsgList.forEach {
-//                    Log.i(log,"newIsoMsg: " + it )
-//                }
+            }.start()
 
-            } else{
 
-                errorCode(responseCode,"Please check your problem.")
-                Log.e(log,"Settlement Error!!!.")
-            }
+                if(responseCode == "3935"){
+
+                    Log.i(log,"go to batch upload transaction.")
+
+                    val itn =Intent(this,BatchUploadActivity::class.java).apply{
+                        putExtra("startId",startId)
+                        putExtra("endId",endId)
+                    }
+                    startActivity(itn)
+
+                } else{
+
+                    errorCode(responseCode,"Please check your problem.")
+                    Log.e(log,"Settlement Error!!!.")
+                }
 
         }
 
     }
 
-    fun manageBatchUpload(){
-        //implement batch upload
-
-    }
 
     fun manageSettlementApprove(){
 
@@ -299,7 +326,7 @@ class SettlementActivity : AppCompatActivity() {
         editor.putInt("oldStartId", startId!!)
         editor.commit()
 
-        setDialog(null,"Transaction complete.")
+        setDialog(null,"Settlement complete.")
 
         settlementFlag =  sp.getBoolean("settlementFlag",false)
         firstTransactionFlag = sp.getBoolean("firstTransactionFlag",false)
@@ -307,7 +334,7 @@ class SettlementActivity : AppCompatActivity() {
         Log.w(log,"firstTransactionFlag: " + firstTransactionFlag)
 
         var settlementApprove  = SaleEntity(null,null,stan)
-        var responseSettlementApprove = ResponseEntity(null,responseMsg)
+        var responseSettlementApprove = ResponseEntity(null,null)
 
         Thread{
 
@@ -344,8 +371,8 @@ class SettlementActivity : AppCompatActivity() {
             .processCode("920000")
             .setField(FIELDS.F11_STAN, stan.toString())
             .setField(FIELDS.F24_NII_FunctionCode, "120")
-            .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray("3232323232323232"))
-            .setField(FIELDS.F42_CA_ID,hexStringToByteArray("323232323232323232323232323232"))
+            .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray(TID))
+            .setField(FIELDS.F42_CA_ID,hexStringToByteArray(MID))
             .setField(FIELDS.F60_Reserved_National,"0006303030313432")
             .setField(FIELDS.F62_Reserved_Private,hexStringToByteArray("303030343841"))
             .setField(FIELDS.F63_Reserved_Private,hexStringToByteArray(batchTotals.toString()))
@@ -361,8 +388,8 @@ class SettlementActivity : AppCompatActivity() {
             .processCode("960000")
             .setField(FIELDS.F11_STAN, stan.toString())
             .setField(FIELDS.F24_NII_FunctionCode, "120")
-            .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray("3232323232323232"))
-            .setField(FIELDS.F42_CA_ID,hexStringToByteArray("323232323232323232323232323232"))
+            .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray(TID))
+            .setField(FIELDS.F42_CA_ID,hexStringToByteArray(MID))
             .setField(FIELDS.F60_Reserved_National,"0006303030313432")
             .setField(FIELDS.F62_Reserved_Private,hexStringToByteArray("303030343841"))
             .setField(FIELDS.F63_Reserved_Private,hexStringToByteArray(batchTotals.toString()))
@@ -389,8 +416,8 @@ class SettlementActivity : AppCompatActivity() {
                     Log.w(log, "endId: " + readId)
                     Log.w(log, "Read STAN: " + readStan)
 
-//                    for(i in startId?.rangeTo(endId!!)!!){
-                     for(i in 1..3){
+                    for(i in startId?.rangeTo(endId!!)!!){
+//                     for(i in 1..3){
                         readIsoMsg = saleDAO?.getSaleWithID(i)?.isoMsg
                         readResponseMsg = responseDAO?.getResponseMsgWithID(i)?.responseMsg
 //                    isoMsgArray.add(readIsoMsg!!)
@@ -399,9 +426,6 @@ class SettlementActivity : AppCompatActivity() {
                             saleAmount = saleAmount?.plus(codeUnpack(readIsoMsg!!,4)!!.toInt())
                             isoMsgList.add(readIsoMsg!!)
 
-//                            if(readIsoMsg != "transactionError"){
-//
-//                            }
                         }
 
                         if(readResponseMsg != null){
@@ -465,6 +489,20 @@ class SettlementActivity : AppCompatActivity() {
         val dialog = builder.create()
         dialog.show()
     }
+
+    fun setDialogNormal(title: String?,msg: String?) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(title)
+        builder.setMessage(msg)
+        //builder.setPositiveButton("OK", DialogInterface.OnClickListener(function = x))
+        builder.setPositiveButton(getString(R.string.ok),
+            DialogInterface.OnClickListener{ dialog, which ->
+                Toast.makeText(applicationContext,android.R.string.ok, Toast.LENGTH_LONG).show()
+            })
+        val dialog = builder.create()
+        dialog.show()
+    }
+
 
     fun setDialog(title: String?,msg: String?) {
         val builder = AlertDialog.Builder(this)
@@ -584,6 +622,14 @@ class SettlementActivity : AppCompatActivity() {
             DE63 += String.format("%02X", ascii)
         }
         return DE63
+    }
+
+    fun totalamount(Totalamount : Double ):String{
+
+        var amount : List<String> = String.format("%.2f",Totalamount).split(".")
+        var Amount = amount[0]+amount[1]
+
+        return Amount
     }
 
 

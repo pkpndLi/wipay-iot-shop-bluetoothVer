@@ -94,6 +94,9 @@ class TransactionActivity : AppCompatActivity() {
     private var bitmap: Bitmap? = null
     private val RC_WRITE_EXTERNAL_STORAGE = 123
 
+    var TID: String = "3232323232323232"
+    var MID: String = "323232323232323232323232323232"
+
 
 //    private val HOST = "192.168.43.195"
 //    var PORT = 5000
@@ -599,8 +602,8 @@ class TransactionActivity : AppCompatActivity() {
             .setField(FIELDS.F22_EntryMode, "0010")
             .setField(FIELDS.F24_NII_FunctionCode, "120")
             .setField(FIELDS.F25_POS_ConditionCode, "00")
-            .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray("3232323232323232"))
-            .setField(FIELDS.F42_CA_ID,hexStringToByteArray("323232323232323232323232323232"))
+            .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray(TID))
+            .setField(FIELDS.F42_CA_ID,hexStringToByteArray(MID))
             .setField(FIELDS.F62_Reserved_Private,hexStringToByteArray("303030343841"))
             .setHeader("6001208000")
             .build()
