@@ -68,7 +68,7 @@ class TransactionActivity : AppCompatActivity() {
     var output1: TextView? = null
     var output2: TextView? = null
     var stan: Int? = null
-    var initialStan: Int? = 1174
+    var initialStan: Int? = 0
     var reverseFlag :Boolean? = null
     var reversal: String? = null
     var responseCode: String? = null
@@ -100,8 +100,17 @@ class TransactionActivity : AppCompatActivity() {
 
 //    private val HOST = "192.168.43.195"
 //    var PORT = 5000
-    private val HOST = "192.168.43.24"
-    var PORT = 3000
+//    private val HOST = "192.168.68.195"
+//    private val HOST = "192.168.68.225"
+//    var PORT = 5000
+//    private val HOST = "192.168.43.24"
+//      private val HOST = "192.168.68.107"
+//      var PORT = 3000
+//    private val HOST = "192.168.68.119"
+//    var PORT = 5001
+
+    private val HOST = "203.148.160.47"
+    var PORT = 7500
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -382,8 +391,8 @@ class TransactionActivity : AppCompatActivity() {
                 }
 
                 Log.i("log_tag", "Error code: " + responseCode)
-                var transactionError = SaleEntity(null,saleMsg.toString(),stan)
-                var responseSaleError = ResponseEntity(null,responseMsg)
+                var transactionError = SaleEntity(null,null,stan)
+                var responseSaleError = ResponseEntity(null,null)
 
                 Thread{
 
@@ -397,18 +406,7 @@ class TransactionActivity : AppCompatActivity() {
                     readStan = saleDAO?.getSale()?.STAN
                     startId = saleDAO?.getSale()?._id!!
 
-                    if(firstTransactionFlag == true){
 
-                        val editor: SharedPreferences.Editor = sp.edit()
-                        editor.putInt("startId", startId)
-                        editor.putBoolean("firstTransactionFlag", false)
-                        editor.commit()
-
-                        Log.i("log_tag","startId :  " + startId)
-                    }
-
-                    Log.w("log_tag","saveId :  " + startId)
-                    Log.w("log_tag","firstTransactionFlag: " + sp.getBoolean("firstTransactionFlag",false))
                     Log.w("log_tag","saveTransaction :  " + readSale)
                     Log.w("log_tag","saveSTAN : " + readStan)
                     Log.w("log_tag","saveResponse : " + readResponseMsg)
@@ -571,12 +569,9 @@ class TransactionActivity : AppCompatActivity() {
             .setLeftPadding(0x00.toByte())
             .mti(MESSAGE_FUNCTION.Request, MESSAGE_ORIGIN.Acquirer)
             .processCode("000000")
-//            .setField(FIELDS.F2_PAN, cardNO)
             .setField(FIELDS.F2_PAN, cardNO)
-//            .setField(FIELDS.F4_AmountTransaction, totalAmount.toString())
-            .setField(FIELDS.F4_AmountTransaction, totalAmount.toString())
+            .setField(FIELDS.F4_AmountTransaction, convertToFloat(totalAmount!!.toDouble()))
             .setField(FIELDS.F11_STAN, STAN)
-//            .setField(FIELDS.F14_ExpirationDate, cardEXD)
             .setField(FIELDS.F14_ExpirationDate, cardEXD)
             .setField(FIELDS.F22_EntryMode, "0010")
             .setField(FIELDS.F24_NII_FunctionCode, "120")
@@ -596,7 +591,7 @@ class TransactionActivity : AppCompatActivity() {
             .mti(MESSAGE_FUNCTION.Request, MESSAGE_ORIGIN.Acquirer)
             .processCode("000000")
             .setField(FIELDS.F2_PAN, cardNO)
-            .setField(FIELDS.F4_AmountTransaction, totalAmount.toString())
+            .setField(FIELDS.F4_AmountTransaction,convertToFloat(totalAmount!!.toDouble()))
             .setField(FIELDS.F11_STAN, STAN)
             .setField(FIELDS.F14_ExpirationDate, cardEXD)
             .setField(FIELDS.F22_EntryMode, "0010")
@@ -793,6 +788,14 @@ class TransactionActivity : AppCompatActivity() {
             strBuilder.append(String.format("%02x", `val` and 0xff.toByte()))
         }
         return strBuilder.toString()
+    }
+
+    fun convertToFloat(Totalamount : Double ):String{
+
+        var amount : List<String> = String.format("%.2f",Totalamount).split(".")
+        var Amount = amount[0]+amount[1]
+
+        return Amount
     }
 
 }

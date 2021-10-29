@@ -6,4 +6,19 @@
     android:layout_height="match_parent"
     tools:context=".BatchUploadActivity">
 
+    <TextView
+        android:id="@+id/textView8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Batch Upload Processing..."
+        android:textSize="20dp"
+        android:textAllCaps="true"
+        android:textColor="#000"
+        android:fontFamily="@font/monofur_bold_for_powerline"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.532"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.431" />
 </androidx.constraintlayout.widget.ConstraintLayout>

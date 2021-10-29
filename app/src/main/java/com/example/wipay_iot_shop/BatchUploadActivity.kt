@@ -74,8 +74,20 @@ class BatchUploadActivity : AppCompatActivity() {
 
     //    private val HOST = "192.168.43.195"
 //    var PORT = 5000
-    private val HOST = "192.168.43.24"
-    var PORT = 3000
+
+//    private val HOST = "192.168.68.195"
+//    private val HOST = "192.168.68.225"
+//    var PORT = 5000
+//    private val HOST = "192.168.68.119"
+//    var PORT = 5001
+
+//    private val HOST = "192.168.43.24"
+//    var PORT = 3000
+    private val HOST = "203.148.160.47"
+    var PORT = 7500
+
+//    private val HOST = "192.168.68.107"
+//    var PORT = 3000
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,8 +96,7 @@ class BatchUploadActivity : AppCompatActivity() {
 
         intent.apply {
             startId = getIntExtra("startId",1)
-            endId = getIntExtra(" endId",2)
-//
+            endId = getIntExtra("endId",2)
         }
 
         sp = getSharedPreferences(MY_PREFS, MODE_PRIVATE)
@@ -285,6 +296,8 @@ class BatchUploadActivity : AppCompatActivity() {
                     var batchUploadPacket: String = ""
 
                     Log.w(log, "Read STAN: " + readStan)
+                    Log.w(log, "startId: " + startId)
+                    Log.w(log, "endId: " + endId)
 
                       for(n in startId?.rangeTo(endId!!)!!){
 //                    for(n in startId..endId!!){

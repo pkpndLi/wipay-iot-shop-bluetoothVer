@@ -88,6 +88,7 @@ class SettlementActivity : AppCompatActivity() {
     var oldStan:String = ""
     var TID: String = "3232323232323232"
     var MID: String = "323232323232323232323232323232"
+    var batchNumber: String = "000142"
 
     var responseCode: String? = null
 
@@ -100,8 +101,18 @@ class SettlementActivity : AppCompatActivity() {
 
     //    private val HOST = "192.168.43.195"
 //    var PORT = 5000
-    private val HOST = "192.168.43.24"
-    var PORT = 3000
+//    private val HOST = "192.168.68.195"
+//    private val HOST = "192.168.68.225"
+//    var PORT = 5000
+//    private val HOST = "192.168.43.24"
+//    var PORT = 3000
+//    private val HOST = "192.168.68.119"
+//    var PORT = 5001
+    private val HOST = "203.148.160.47"
+    var PORT = 7500
+
+//    private val HOST = "192.168.68.107"
+//    var PORT = 3000
 
     var settlementFlag:Boolean? = null
     var firstTransactionFlag:Boolean? = null
@@ -143,6 +154,10 @@ class SettlementActivity : AppCompatActivity() {
             setDialog("Processing failed.","There has never been any transaction.")//
         }else if(lastSettlementFlag == true){
 
+            saleCountTxt?.setText(sp.getString("saleCount","saleCount"))
+            saleAmountTxt?.setText(sp.getString("saleAmount","saleAmount"))
+
+              Log.w(log,"endId" + endId)
               Log.i(log,"In LastSettlement path")
 
               stan = batchStan?.plus(1)
@@ -169,7 +184,7 @@ class SettlementActivity : AppCompatActivity() {
             }else{
 
                 stan = readStan?.plus(1)
-                batchTotals = buildBatchTotals(saleCount!!, saleAmount!!.toDouble())
+                batchTotals = buildBatchTotals(saleCount!!, subStringCutZero(saleAmount!!).toDouble())
 
                 val editor: SharedPreferences.Editor = sp.edit()
                 editor.putBoolean("settlementFlag", true)
@@ -373,7 +388,7 @@ class SettlementActivity : AppCompatActivity() {
             .setField(FIELDS.F24_NII_FunctionCode, "120")
             .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray(TID))
             .setField(FIELDS.F42_CA_ID,hexStringToByteArray(MID))
-            .setField(FIELDS.F60_Reserved_National,"0006303030313432")
+            .setField(FIELDS.F60_Reserved_National,batchNumber)
             .setField(FIELDS.F62_Reserved_Private,hexStringToByteArray("303030343841"))
             .setField(FIELDS.F63_Reserved_Private,hexStringToByteArray(batchTotals.toString()))
             .setHeader("6001208000")
@@ -390,7 +405,7 @@ class SettlementActivity : AppCompatActivity() {
             .setField(FIELDS.F24_NII_FunctionCode, "120")
             .setField(FIELDS.F41_CA_TerminalID,hexStringToByteArray(TID))
             .setField(FIELDS.F42_CA_ID,hexStringToByteArray(MID))
-            .setField(FIELDS.F60_Reserved_National,"0006303030313432")
+            .setField(FIELDS.F60_Reserved_National,batchNumber)
             .setField(FIELDS.F62_Reserved_Private,hexStringToByteArray("303030343841"))
             .setField(FIELDS.F63_Reserved_Private,hexStringToByteArray(batchTotals.toString()))
             .setHeader("6001208000")
@@ -413,6 +428,7 @@ class SettlementActivity : AppCompatActivity() {
                     readId = saleDAO?.getSale()?._id
                     endId = readId!!
 
+                    Log.w(log, "startId: " + startId)
                     Log.w(log, "endId: " + readId)
                     Log.w(log, "Read STAN: " + readStan)
 
@@ -430,13 +446,15 @@ class SettlementActivity : AppCompatActivity() {
 
                         if(readResponseMsg != null){
                             responseCount = responseCount?.plus(1)
-                            responseAmount = responseAmount?.plus(codeUnpack(readResponseMsg!!,4)!!.toInt())
+//                            responseAmount = responseAmount?.plus(codeUnpack(readResponseMsg!!,4)!!.toInt())
+//                            responseAmount = null
                         }
 
                         Log.e(log, "Read isoMsg: " + readIsoMsg)
                         Log.e(log, "Read responseMsg: " + readResponseMsg)
 
                      }
+
                     Log.e(log, "Sale Count: " + saleCount)
                     Log.e(log, "Response Count: " + responseCount)
                     Log.e(log, "Sale Amount: " + saleAmount)
@@ -445,7 +463,12 @@ class SettlementActivity : AppCompatActivity() {
                     runOnUiThread {
 
                         saleCountTxt?.setText(saleCount.toString())
-                        saleAmountTxt?.setText(saleAmount.toString())
+                        saleAmountTxt?.setText(subStringCutZero(saleAmount!!).toString())
+
+                        val editor: SharedPreferences.Editor = sp.edit()
+                        editor.putString("saleCount", saleCount.toString())
+                        editor.putString("saleAmount", subStringCutZero(saleAmount!!).toString())
+                        editor.commit()
 
                     }
 
@@ -497,7 +520,7 @@ class SettlementActivity : AppCompatActivity() {
         //builder.setPositiveButton("OK", DialogInterface.OnClickListener(function = x))
         builder.setPositiveButton(getString(R.string.ok),
             DialogInterface.OnClickListener{ dialog, which ->
-                Toast.makeText(applicationContext,android.R.string.ok, Toast.LENGTH_LONG).show()
+//                Toast.makeText(applicationContext,android.R.string.ok, Toast.LENGTH_SHORT).show()
             })
         val dialog = builder.create()
         dialog.show()
@@ -630,6 +653,12 @@ class SettlementActivity : AppCompatActivity() {
         var Amount = amount[0]+amount[1]
 
         return Amount
+    }
+
+    fun subStringCutZero(amount : Int):Double{
+        var a = amount.toString()
+        a = a.substring(0,a.length-2)
+        return a.toDouble()
     }
 
 
