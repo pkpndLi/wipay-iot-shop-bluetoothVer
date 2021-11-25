@@ -83,8 +83,11 @@ class BatchUploadActivity : AppCompatActivity() {
 
 //    private val HOST = "192.168.43.24"
 //    var PORT = 3000
-    private val HOST = "203.148.160.47"
-    var PORT = 7500
+//    private val HOST = "203.148.160.47"
+//    var PORT = 7500
+
+    private val HOST = "192.168.178.187"
+    var PORT = 5000
 
 //    private val HOST = "192.168.68.107"
 //    var PORT = 3000

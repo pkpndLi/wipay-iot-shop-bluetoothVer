@@ -68,7 +68,7 @@ class TransactionActivity : AppCompatActivity() {
     var output1: TextView? = null
     var output2: TextView? = null
     var stan: Int? = null
-    var initialStan: Int? = 0
+    var initialStan: Int? = 1244
     var reverseFlag :Boolean? = null
     var reversal: String? = null
     var responseCode: String? = null
@@ -102,15 +102,16 @@ class TransactionActivity : AppCompatActivity() {
 //    var PORT = 5000
 //    private val HOST = "192.168.68.195"
 //    private val HOST = "192.168.68.225"
+//      private val HOST = "192.168.178.187"
 //    var PORT = 5000
-//    private val HOST = "192.168.43.24"
+    private val HOST = "192.168.43.24"
 //      private val HOST = "192.168.68.107"
-//      var PORT = 3000
+      var PORT = 3000
 //    private val HOST = "192.168.68.119"
 //    var PORT = 5001
 
-    private val HOST = "203.148.160.47"
-    var PORT = 7500
+//    private val HOST = "203.148.160.47"
+//    var PORT = 7500
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -470,6 +470,8 @@ import java.util.ArrayList
          //		+"\r\n"+"三磁道长度："+track3Length);
          cardNO = maskedPAN
          cardEXD = expiryDate
+         Log.e("logCard","cardNO: " + cardNO)
+         Log.e("logCard","cardEXD: " + cardEXD)
          showLogMessage("Decryption succeeded:$maskedPAN")
      }
 
